@@ -115,6 +115,7 @@ program plotms
   !!!!!!!!!!!!!!!!!!!!!
 
   expdat        = .false.
+  nistdat        = .false.
   verbose       = .false.
   small         = .false.
   isec          = 0
@@ -141,7 +142,7 @@ program plotms
  !xname='~/.mass_raw.agr'
  !xname='~/.mass_jay.agr'
   fname=''
-  exp_dat="exp.dat"
+  exp_dat=''
   
   ! start loop processing aruments
   
@@ -302,12 +303,27 @@ program plotms
   write(*,'(6x,''-> Reading .res file: '',2x,(a))')trim(fname)
 
   !> write out if compared
-  if ( exp_dat == 'exp.dat') then
-    inquire(file='exp.dat',exist=expdat)
-  elseif (exp_dat /= 'exp.dat') then
-    inquire(file=exp_dat,exist=expdat)
-  endif
+
+  select case(exp_dat)
+    case('exp.dat')
+      inquire(file=exp_dat,exist=expdat)
+    case('nist.dat')
+      inquire(file=exp_dat,exist=nistdat)
+    case default
+      inquire(file=exp_dat,exist=expdat)
+      if(verbose) then
+        if (.not. expdat) write(*,'(6x,''-> No experimental file <-'')') 
+      endif
+  end select
+
+  !if ( exp_dat == 'exp.dat' .or. exp_dat == '') then
+  !elseif (exp_dat /= 'exp.dat') then
+  !  inquire(file=exp_dat,exist=expdat)
+  !elseif (exp_dat /= 'nist.dat') then
+  !  inquire(file=exp_dat,exist=nistdat)
+  !endif
   if (expdat) write(*,'(6x,''-> Experimental file: '',2x, (a))') exp_dat
+  if (nistdat) write(*,'(6x,''-> Experimental NIST file: '',2x, (a))') exp_dat
 
   !> give info about xmgrace file (if verbose)
   if (verbose) write(*,'(6x ''   -> xmgrace file body '',(a)         )')trim(xname)
@@ -381,6 +397,7 @@ program plotms
       read(io_spec,*,iostat=io) chrg2, z_chrg, irun, jsec, nf, atm_types, (iat(kk),nat(kk), kk = 1, atm_types)
       if(io<0) exit !EOF
       if(io>0) stop ' -- Fail in read -- ' !fail
+
   
     elseif(spec == 2) then !CID
       read(io_spec,*,iostat=io) chrg2, z_chrg, irun, jcoll, jsec, nf, atm_types, (iat(kk), nat(kk), kk = 1, atm_types)
@@ -648,10 +665,8 @@ program plotms
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   imax=0
   imin=0
-  
-  inquire(file='nist.dat',exist=nistdat)
-
-  
+ 
+  !> Read-in NIST-data file
   if(nistdat) then
     write(*,*) 'Reading nist.dat ...'
     open( file = 'nist.dat', newunit = io_exp, status = 'old')
@@ -717,9 +732,6 @@ rd: do
 
   !!!!!!!!!!!!!!!!!!!!!
   !> if it is a csv file
-
-
-
   if (expdat) then
     write(*,*) 'Reading ', exp_dat,' ...'
     open( file = exp_dat, newunit = io_exp, status = 'old')
